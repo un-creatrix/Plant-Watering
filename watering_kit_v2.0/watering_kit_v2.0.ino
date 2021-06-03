@@ -8,20 +8,35 @@ RTC_DS1307 RTC;
 int pump = 4; // Pin for Water Pump
 
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
-//char json[] = "{1:["pump":6, "Sensor":"A0", "Watered":0, "MoReqd":.8], 2:["pump":8, "Sensor":"A1", "Watered":0, "MoReqd":.8], 3:["pump":9, "Sensor":"A2", "Watered":0, "MoReqd":.8], 4:["pump":10, "Sensor":"A3", "Watered":0, "MoReqd":.8],}";
+int PumpPort [] = {6, 8, 9, 10};
+word SensPort [] = {"A0", "A1", "A2", "A3"};
+int TimeWtr  [] = {0, 0, 0, 0};
+float MoistRqd [] = {.8, .8, .8, .8};
 
 void setup() {
 	Serial.begin(9600);
-	while(!Serial) continue;
+	//while(!Serial) continue;
 	Serial.println("Welcome to Plant Hub! Software v2.0.2");
 	pinMode(pump, OUTPUT);
 	digitalWrite(pump, HIGH);
 	delay(200);
 	digitalWrite(pump,LOW);
+	// Relay loop through test
+	Serial.print("Testing Plant Port => ");
+	for (int p = 0; PumpPort[p] != NULL; p++) {
+		if (p != 0 ) {Serial.print(", ");};
+		pinMode(PumpPort[p], OUTPUT);
+		digitalWrite(PumpPort[p], HIGH);
+		delay(200);
+		digitalWrite(PumpPort[p],LOW);
+		Serial.print(p);
+	}
+	for (int p = 0; SensPort[p] != NULL; p++) {
+
+	}
 
 
-
-
+	Serial.print("\n");
 }
 void loop() {
 
