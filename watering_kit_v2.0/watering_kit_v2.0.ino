@@ -99,11 +99,13 @@ unsigned long endtime3;
 unsigned long nowtimeNext3;
 
 //Sensor Calibration
-int Hum100 = 307;
-int Hum0   = 590;
+int Hum100 = 303;
+int Hum0   = 591;
+
+//Min Plant Watering Moisture
 
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
-int PumpPort [] = {6, 8, 9, 10};
+int PumpPort [] = {6, 8, 9, 10, NULL};
 byte SensPort [] = {A0, A1, A2, A3, NULL}; // A port selection for plants
 int TimeWtr  [] = {0, 0, 0, 0};
 float MoistRqd [] = {.8, .8, .8, .8};
@@ -163,12 +165,44 @@ void setup() {
 		if (p != 0 ) {Serial.print(", "); display.print("\n");};
 		delay(200);
 		Serial.print(SensPort[p]);
-		display.setTextColor(WHITE, BLACK);
 		display.print(SensPort[p]);
 		float reading = analogRead(SensPort[p]);
 		int reading_mapped =map(reading,Hum0,Hum100,0,100);
 		delay(20);
-		if (reading_mapped >= 100 or reading_mapped <= 0) {
+		if (reading_mapped > 100 or reading_mapped <= 0) {
+			display.setTextColor(BLACK, WHITE);
+		}
+		Serial.print(" - ");
+		display.print(" - ");
+		Serial.print(reading_mapped);
+		display.print(reading_mapped);
+		Serial.print(" - ");
+		display.print(" - ");
+		Serial.print(reading);
+		display.print(reading);
+		display.setTextColor(WHITE, BLACK);
+		display.display();
+	}
+	Serial.print("\n");
+}
+
+void loop() {
+	display.setCursor(0, 0);
+	// Sensor loop through test
+	Serial.print("Testing Plant Sensor => ");
+	display.setTextSize(2);
+	display.println("Sensors");
+	display.display();
+	display.setTextSize(1);
+	for (int p = 0; SensPort[p] != NULL ; p++) {
+		if (p != 0 ) {Serial.print(", "); display.print("\n");};
+		delay(200);
+		Serial.print(SensPort[p]);
+		display.print(SensPort[p]);
+		float reading = analogRead(SensPort[p]);
+		int reading_mapped =map(reading,Hum0,Hum100,0,100);
+		delay(20);
+		if (reading_mapped > 100 or reading_mapped <= 0) {
 			display.setTextColor(BLACK, WHITE);
 		}
 		Serial.print(" - ");
@@ -180,10 +214,7 @@ void setup() {
 		Serial.print(reading);
 		display.print(reading);
 		display.display();
+		display.setTextColor(WHITE, BLACK);
 	}
 	Serial.print("\n");
-}
-
-void loop() {
-
 }
