@@ -13,6 +13,7 @@ RTC_DS1307 RTC;
 #define OLED_RESET 4
 Adafruit_SH1106 display(OLED_RESET);
 
+// All Graphics
 const unsigned char Water [] PROGMEM = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -79,7 +80,6 @@ const unsigned char Water [] PROGMEM = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
-
 const unsigned char Bloomed [] PROGMEM = {
 	0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xc0, 0xc0, 0x00, 0x00, 0x00, 
 	0x00, 0x01, 0x02, 0xb0, 0x1f, 0xe0, 0x00, 0x00, 0x00, 0x04, 0x37, 0xf1, 0x00, 0x10, 0x00, 0x00, 
@@ -136,7 +136,10 @@ const unsigned char Watering [] PROGMEM = {
 	0x00, 0xff, 0xe1, 0xe0, 0x00, 0x00, 0x3f, 0xff, 0x80, 0x00, 0x00, 0x04, 0x7c, 0x00, 0x00	// 35 X 35
 };
 
-int pump = 4; // Pin for Water Pump
+// Defines for Physical Pins
+int pump = 4; 			// Pin for Water Pump
+int sideButton = 12;	// Side Menu Control Button
+
 // All for RTC
 static unsigned long currentMillis_send = 0;
 static unsigned long  Lasttime_send = 0;
@@ -155,16 +158,17 @@ unsigned long endtime3;
 unsigned long nowtimeNext3;
 
 //Sensor Calibration Defaults for Fixed Humidity
-int Hum100 = 303;
+int Hum100 = 300;
 int Hum0   = 591;
 
-//Min Plant Watering Moisture
-
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
-int PumpPort [] = {6, 8, 9, 10, NULL};
-byte SensPort [] = {A0, A1, A2, A3, NULL}; // A port selection for plants
-int TimeWtr  [] = {0, 0, 0, 0};
-float MoistRqd [] = {.8, .8, .8, .8};
+const char *Plant [] 	= {"Peppermint", "Peppermint", "None", "None", NULL}; // Plant Name
+const int PumpPort [] 	= { 6 		   ,  8 		 ,  9 	 ,  10 	 , NULL}; // Pump Port Plant is on
+const byte SensPort [] 	= { A0 		   ,  A1 		 ,  A2 	 ,  A3 	 , NULL}; // A port selection for plants
+int moisture []         = { 0          ,  0          ,  0    ,  0    , NULL};
+bool PlantWtr [] 		= { false 	   ,  false 	 ,  false, 	false, NULL}; // Does the plant need water
+int TimeWtr  [] 		= { 0 		   ,  0 		 ,  0 	 ,  0    };       // Amount of time plant has been watered for
+float MoistRqd [] 		= { 60 		   ,  60 		 ,  80 	 ,  80 	 };	      // Moisture Required by Plant
 
 void SensorInit(bool init = false) {
 	if (init) {display.clearDisplay();};
@@ -173,10 +177,11 @@ void SensorInit(bool init = false) {
 	if (init) {Serial.print("Testing Plant Sensor => ");};
 	display.setTextSize(2);
 	display.println("Sensors");
-	display.display();
 	display.setTextSize(1);
+	display.println("Port - % - Volt Ref");
+	display.display();
 	for (int p = 0; SensPort[p] != NULL ; p++) {
-		if (p != 0 ) {if (init) {Serial.print(", ");delay(300);}; display.print("\n");};
+		if (p != 0 ) {if (init) {Serial.print(", ");delay(100);}; display.print("\n");};
 		if (init) {Serial.print(SensPort[p]);};
 		display.print(SensPort[p]);
 		int reading = analogRead(SensPort[p]);
@@ -197,6 +202,14 @@ void SensorInit(bool init = false) {
 		display.setTextColor(WHITE, BLACK);
 	}
 	if (init) {Serial.print("\n");};
+}
+
+void watering(void) {
+	for (int i = 0; SensPort[i] != NULL; i ++) {
+		int reading = analogRead(SensPort[i]);
+		moisture[i] = map(reading,Hum0,Hum100,0,100);
+		Serial.println(moisture[i]);
+	}
 }
 
 void setup() {
@@ -232,12 +245,16 @@ void setup() {
 	display.display();
 	display.setTextSize(1);
 	for (int p = 0; PumpPort[p] != NULL; p++) {
-		if (p != 0 ) {Serial.print(", "); display.print(", ");};
+		if (p != 0 ) {Serial.print(", ");};
 		pinMode(PumpPort[p], OUTPUT);
 		digitalWrite(PumpPort[p], HIGH);
 		delay(100);
-		Serial.print(p);
+		Serial.print(p+1);
 		display.print(p+1);
+		Serial.print(" - ");
+		display.print(" - ");
+		Serial.print(Plant[p]);
+		display.println(Plant[p]);
 		display.display();
 		digitalWrite(PumpPort[p],LOW);
 	}
@@ -247,14 +264,49 @@ void setup() {
 }
 
 void loop() {
-	//SensorInit(); //Function for Initializing Sensors
-	delay(1000);
-	display.clearDisplay();
-	display.drawBitmap(10, 10, Bud, 30, 35, WHITE);
-	display.drawBitmap(70, 10, Watering, 35, 35, WHITE);
-	display.display();
+	for (int plant = 0; Plant[plant] != NULL; plant++) { //Loops through each plant on display screen
+		display.clearDisplay();
+		display.setTextColor(WHITE, BLACK);
+		display.setCursor(0,0);
+		display.setTextSize(2);
+		display.println(Plant[plant]);
+		display.drawBitmap(5, 20, Bud, 30, 35, WHITE);
+		for (int c = 0; c <= 1000; c = c+10) {
+			watering(); // Calls on Script to manage watering events
+			display.fillRect(43, 20, 85, 40, BLACK);
+			//Plant Number
+			display.setCursor(43,20);
+			display.setTextSize(1);
+			display.print("Plant - ");
+			display.print(plant+1);
+			display.print(" of ");
+			display.println(4);
+			//Plant Moisture
+			display.setCursor(43,30);
+			display.setTextSize(1);
+			display.print("Moisture ");
+			display.print(moisture[plant]);
+			display.print("%");
+			//Plant Required Moisture
+			display.setCursor(43,40);
+			display.setTextSize(1);
+			display.print("Required - ");
+			display.print("60%");
+			//Watering Time
+			display.setCursor(43,50);
+			display.setTextSize(1);
+			display.print("Watrd ");
+			display.print("00:00:00");
+			// Reload status bar
+			display.fillRect(0, 61, 128, 3, BLACK);
+			display.fillRect(0, 61, 64, 3, WHITE);
+			display.fillRect(0, 61, map(c,0,1000,0,64), 3, BLACK);
+			display.fillRect(64, 61, map(c,0,1000,64,0), 3, WHITE);
+			display.display();
+		}
+	}
 
-	if (Serial) { //Reads for Serial Connection
+	/*if (Serial) { //Reads for Serial Connection
 		switch (Serial.read()) {
 			case 'help':			// Guides Users to commands using help command
 			Serial.println("");
@@ -266,5 +318,5 @@ void loop() {
 			default: 			// Always in loop when connected to serial and no command issued
 			break;
 		}
-	}
+	}*/
 }
