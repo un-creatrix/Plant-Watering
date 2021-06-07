@@ -168,7 +168,7 @@ const byte SensPort [] 	= { A0 		   ,  A1 		 ,  A2 	 ,  A3 	 , NULL}; // A port 
 int moisture []         = { 0          ,  0          ,  0    ,  0    , NULL};
 bool PlantWtr [] 		= { false 	   ,  false 	 ,  false, 	false, NULL}; // Does the plant need water
 int TimeWtr  [] 		= { 0 		   ,  0 		 ,  0 	 ,  0    };       // Amount of time plant has been watered for
-float MoistRqd [] 		= { 60 		   ,  60 		 ,  80 	 ,  80 	 };	      // Moisture Required by Plant
+int MoistRqd [] 		= { 0 		   ,  0 		 ,  0 	 ,  0 	 };	      // Moisture Required by Plant // 0 Acts as no watering place holder
 
 void SensorInit(bool init = false) {
 	if (init) {display.clearDisplay();};
@@ -205,11 +205,21 @@ void SensorInit(bool init = false) {
 }
 
 void watering(void) {
+	bool flag = false;
 	for (int i = 0; SensPort[i] != NULL; i ++) {
 		int reading = analogRead(SensPort[i]);
 		moisture[i] = map(reading,Hum0,Hum100,0,100);
-		Serial.println(moisture[i]);
+		if (moisture[i] < 0) {moisture[i] = 0;} // Forces Min to 0 for Reading
+		if (MoistRqd[i] != 0) {
+			if (moisture[i] < MoistRqd[i]) {PlantWtr[i] = true;} else {PlantWtr[i] = false;}
+		}
 	}
+	for (int i = 0; SensPort[i] != NULL; i ++) {
+		if (PlantWtr[i]) {digitalWrite(PumpPort[i], HIGH);} else {digitalWrite(PumpPort[i], LOW);} // Enables Pump Port to plant needing water
+		if (PlantWtr[i]) {flag = true;}				// Sets flag to enable pump once ready to water
+		PlantWtr[i] = false;
+	}
+	if (flag) {digitalWrite(pump, HIGH);} else {digitalWrite(pump, LOW);}
 }
 
 void setup() {
@@ -223,7 +233,7 @@ void setup() {
 	Serial.println("Welcome to Plant Hub! Software v2.0.2");
 	pinMode(pump, OUTPUT);
 	digitalWrite(pump, HIGH);
-	delay(200);
+	delay(100);
 	digitalWrite(pump,LOW);
 	display.clearDisplay();
 	display.display();
@@ -284,14 +294,17 @@ void loop() {
 			//Plant Moisture
 			display.setCursor(43,30);
 			display.setTextSize(1);
-			display.print("Moisture ");
+			display.print("Moisture  ");
+			if (moisture[plant] < 10) {display.print("  ");} else if (moisture[plant] < 100 and moisture[plant] >= 10) {display.print(" ");}
 			display.print(moisture[plant]);
 			display.print("%");
 			//Plant Required Moisture
 			display.setCursor(43,40);
 			display.setTextSize(1);
-			display.print("Required - ");
-			display.print("60%");
+			display.print("Required  ");
+			if (MoistRqd[plant] < 10) {display.print("  ");} else if (MoistRqd[plant] < 100 and MoistRqd[plant] >= 10) {display.print(" ");}
+			display.print(MoistRqd[plant]);
+			display.print("%");
 			//Watering Time
 			display.setCursor(43,50);
 			display.setTextSize(1);
