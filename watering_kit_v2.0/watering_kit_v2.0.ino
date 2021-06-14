@@ -5,6 +5,7 @@
 RTC_DS1307 RTC;
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH1106.h>
+#include "WatchDog.h"
 
 // Defines OLED Panel
 #define XPOS 0
@@ -161,6 +162,9 @@ unsigned long nowtimeNext3;
 int Hum100 = 300;
 int Hum0   = 591;
 
+//Rounding Amount
+float roundingMoisture = 5;
+
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
 const char *Plant [] 	= {"Peppermint", "Peppermint", "None", "None", NULL}; // Plant Name
 const int PumpPort [] 	= { 6 		   ,  8 		 ,  9 	 ,  10 	 , NULL}; // Pump Port Plant is on
@@ -210,6 +214,7 @@ void watering(void) {
 		int reading = analogRead(SensPort[i]);
 		moisture[i] = map(reading,Hum0,Hum100,0,100);
 		if (moisture[i] < 0) {moisture[i] = 0;} // Forces Min to 0 for Reading
+		if (moisture[i] > 100) {moisture[i] = 100;} // Forces Max to 100 for Reading
 		if (MoistRqd[i] != 0) {
 			if (moisture[i] < MoistRqd[i]) {PlantWtr[i] = true;} else {PlantWtr[i] = false;}
 		}
@@ -224,16 +229,17 @@ void watering(void) {
 
 void setup() {
 	display.begin(SH1106_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
+	WatchDog::init(failureRoutine, 3000); // Watchdog startup and defining script (function to run on failure to feed, feed rate required)
 	Serial.begin(9600);
 	display.clearDisplay();
 	display.drawBitmap(0, 0, Water, 128, 64, WHITE);
 	display.display();
-	delay(200);
+	delay(150);
 	//while(!Serial) continue;
 	Serial.println("Welcome to Plant Hub! Software v2.0.2");
 	pinMode(pump, OUTPUT);
 	digitalWrite(pump, HIGH);
-	delay(100);
+	delay(50);
 	digitalWrite(pump,LOW);
 	display.clearDisplay();
 	display.display();
@@ -258,7 +264,7 @@ void setup() {
 		if (p != 0 ) {Serial.print(", ");};
 		pinMode(PumpPort[p], OUTPUT);
 		digitalWrite(PumpPort[p], HIGH);
-		delay(100);
+		delay(50);
 		Serial.print(p+1);
 		display.print(p+1);
 		Serial.print(" - ");
@@ -271,6 +277,12 @@ void setup() {
 	Serial.println();
 	delay(500);
 	SensorInit(true); // Function for Initializing Sensors
+	display.println();
+	display.print("+ WatchDog - ");
+	display.println(WatchDog::getPeriod());
+	WatchDog::stop();
+	display.display();
+	delay(1000);
 }
 
 void loop() {
@@ -295,8 +307,10 @@ void loop() {
 			display.setCursor(43,30);
 			display.setTextSize(1);
 			display.print("Moisture  ");
-			if (moisture[plant] < 10) {display.print("  ");} else if (moisture[plant] < 100 and moisture[plant] >= 10) {display.print(" ");}
-			display.print(moisture[plant]);
+			int moistRound = moisture[plant]/roundingMoisture;
+			moistRound = moistRound*roundingMoisture;
+			if (moistRound < 10) {display.print("  ");} else if (moistRound < 100 and moistRound >= 10) {display.print(" ");}
+			display.print(moistRound);
 			display.print("%");
 			//Plant Required Moisture
 			display.setCursor(43,40);
@@ -318,18 +332,14 @@ void loop() {
 			display.display();
 		}
 	}
-
-	/*if (Serial) { //Reads for Serial Connection
-		switch (Serial.read()) {
-			case 'help':			// Guides Users to commands using help command
-			Serial.println("");
-			Serial.println("SensCal			- Starts Sensor Calibration Cycle");
-			Serial.println("EEPromSet[]		- Sets EEProm data for each Plant [Plant Number]");
-			break;
-			case 'SensCal':		// Starts Sensor Calibration Cycle
-			break;
-			default: 			// Always in loop when connected to serial and no command issued
-			break;
-		}
-	}*/
+}
+void failureRoutine(void) { // Function to be called in event of hang or system failure
+	display.clearDisplay();
+	display.setTextColor(WHITE, BLACK);
+	display.setCursor(0,0);
+	display.setTextSize(2);
+	display.println("!!! Error !!!");
+	display.setTextSize(1);
+	display.println("Failure to Feed WatchDog");
+	display.display();
 }
