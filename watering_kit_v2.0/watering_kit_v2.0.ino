@@ -356,12 +356,9 @@ void loop() {
 	}
 }
 void failureRoutine(void) { // Function to be called in event of hang or system failure
-	display.clearDisplay();
-	display.setTextColor(WHITE, BLACK);
-	display.setCursor(0,0);
-	display.setTextSize(2);
-	display.println("!!! Error !!!");
-	display.setTextSize(1);
-	display.println("Failure to Feed WatchDog");
-	display.display();
+	digitalWrite(pump,LOW);
+	for (int p = 0; PumpPort[p] != NULL; p++) {
+		if (p != 0 ) {Serial.print(", ");};
+		digitalWrite(PumpPort[p],LOW);
+	}     
 }
