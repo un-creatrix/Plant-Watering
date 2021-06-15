@@ -172,7 +172,7 @@ const byte SensPort [] 	= { A0 		   ,  A1 		 ,  A2 	 ,  A3 	 , NULL}; // A port 
 int moisture []         = { 0          ,  0          ,  0    ,  0    , NULL};
 bool PlantWtr [] 		= { false 	   ,  false 	 ,  false, 	false, NULL}; // Does the plant need water
 int TimeWtr  [] 		= { 0 		   ,  0 		 ,  0 	 ,  0    };       // Amount of time plant has been watered for
-int MoistRqd [] 		= { 0 		   ,  0 		 ,  0 	 ,  0 	 };	      // Moisture Required by Plant // 0 Acts as no watering place holder
+int MoistRqd [] 		= { 80 		   ,  80 		 ,  0 	 ,  0 	 };	      // Moisture Required by Plant // 0 Acts as no watering place holder
 
 void SensorInit(bool init = false) {
 	if (init) {display.clearDisplay();};
@@ -286,50 +286,72 @@ void setup() {
 }
 
 void loop() {
-	for (int plant = 0; Plant[plant] != NULL; plant++) { //Loops through each plant on display screen
-		display.clearDisplay();
+	for (int c = 0; c <= 1000; c = c+10) {
+		watering(); // Calls on Script to manage watering events
+		display.fillRect(0, 0, 128, 61, BLACK);
 		display.setTextColor(WHITE, BLACK);
 		display.setCursor(0,0);
 		display.setTextSize(2);
-		display.println(Plant[plant]);
-		display.drawBitmap(5, 20, Bud, 30, 35, WHITE);
-		for (int c = 0; c <= 1000; c = c+10) {
-			watering(); // Calls on Script to manage watering events
-			display.fillRect(43, 20, 85, 40, BLACK);
-			//Plant Number
-			display.setCursor(43,20);
-			display.setTextSize(1);
-			display.print("Plant - ");
-			display.print(plant+1);
-			display.print(" of ");
-			display.println(4);
-			//Plant Moisture
-			display.setCursor(43,30);
-			display.setTextSize(1);
-			display.print("Moisture  ");
-			int moistRound = moisture[plant]/roundingMoisture;
-			moistRound = moistRound*roundingMoisture;
-			if (moistRound < 10) {display.print("  ");} else if (moistRound < 100 and moistRound >= 10) {display.print(" ");}
-			display.print(moistRound);
-			display.print("%");
-			//Plant Required Moisture
-			display.setCursor(43,40);
-			display.setTextSize(1);
-			display.print("Required  ");
-			if (MoistRqd[plant] < 10) {display.print("  ");} else if (MoistRqd[plant] < 100 and MoistRqd[plant] >= 10) {display.print(" ");}
-			display.print(MoistRqd[plant]);
-			display.print("%");
-			//Watering Time
-			display.setCursor(43,50);
-			display.setTextSize(1);
-			display.print("Watrd ");
-			display.print("00:00:00");
-			// Reload status bar
-			display.fillRect(0, 61, 128, 3, BLACK);
-			display.fillRect(0, 61, 64, 3, WHITE);
-			display.fillRect(0, 61, map(c,0,1000,0,64), 3, BLACK);
-			display.fillRect(64, 61, map(c,0,1000,64,0), 3, WHITE);
-			display.display();
+		display.println("Water Hub");
+		display.setTextSize(1);
+		display.println("Date 00/00/0000");
+		display.println("Time   00:00:00");
+		display.println("WatchDog - Unfed");
+		display.println("");
+		display.display();
+		// Reload status bar
+		display.fillRect(0, 61, 128, 3, BLACK);
+		display.fillRect(0, 61, 64, 3, WHITE);
+		display.fillRect(0, 61, map(c,0,1000,0,64), 3, BLACK);
+		display.fillRect(64, 61, map(c,0,1000,64,0), 3, WHITE);
+		display.display();
+	}
+	for (int plant = 0; Plant[plant] != NULL; plant++) { //Loops through each plant on display screen
+		if (Plant[plant] != "None") {
+			display.clearDisplay();
+			display.setTextColor(WHITE, BLACK);
+			display.setCursor(0,0);
+			display.setTextSize(2);
+			display.println(Plant[plant]);
+			display.drawBitmap(5, 20, Bud, 30, 35, WHITE);
+			for (int c = 0; c <= 1000; c = c+10) {
+				watering(); // Calls on Script to manage watering events
+				display.fillRect(43, 20, 85, 40, BLACK);
+				//Plant Number
+				display.setCursor(43,20);
+				display.setTextSize(1);
+				display.print("Plant - ");
+				display.print(plant+1);
+				display.print(" of ");
+				display.println(4);
+				//Plant Moisture
+				display.setCursor(43,30);
+				display.setTextSize(1);
+				display.print("Moisture  ");
+				int moistRound = moisture[plant]/roundingMoisture;
+				moistRound = moistRound*roundingMoisture;
+				if (moistRound < 10) {display.print("  ");} else if (moistRound < 100 and moistRound >= 10) {display.print(" ");}
+				display.print(moistRound);
+				display.print("%");
+				//Plant Required Moisture
+				display.setCursor(43,40);
+				display.setTextSize(1);
+				display.print("Required  ");
+				if (MoistRqd[plant] < 10) {display.print("  ");} else if (MoistRqd[plant] < 100 and MoistRqd[plant] >= 10) {display.print(" ");}
+				display.print(MoistRqd[plant]);
+				display.print("%");
+				//Watering Time
+				display.setCursor(43,50);
+				display.setTextSize(1);
+				display.print("Watrd ");
+				display.print("00:00:00");
+				// Reload status bar
+				display.fillRect(0, 61, 128, 3, BLACK);
+				display.fillRect(0, 61, 64, 3, WHITE);
+				display.fillRect(0, 61, map(c,0,1000,0,64), 3, BLACK);
+				display.fillRect(64, 61, map(c,0,1000,64,0), 3, WHITE);
+				display.display();
+			}
 		}
 	}
 }
