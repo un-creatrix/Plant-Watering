@@ -1,11 +1,9 @@
-#include <Wire.h>
 #include "U8glib.h"
-#include "Wire.h"
-#include "RTClib.h"
-RTC_DS1307 RTC;
-#include <Adafruit_GFX.h>
-#include <Adafruit_SH1106.h>
-#include "WatchDog.h"
+#include "Wire.h"				// Introduces I2C support
+#include "RTClib.h"				// Real Time Clock
+#include <Adafruit_GFX.h>		// OLED GFX Library
+#include <Adafruit_SH1106.h>	// Modified Library for OLED to Support SH1106
+#include "WatchDog.h"			// Library to simplify working with watchdog inside of script
 
 // Defines OLED Panel
 #define XPOS 0
@@ -142,6 +140,7 @@ int pump = 4; 			// Pin for Water Pump
 int sideButton = 12;	// Side Menu Control Button
 
 // All for RTC
+RTC_DS1307 RTC;
 static unsigned long currentMillis_send = 0;
 static unsigned long  Lasttime_send = 0;
 char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat",};
@@ -161,9 +160,8 @@ unsigned long nowtimeNext3;
 //Sensor Calibration Defaults for Fixed Humidity
 int Hum100 = 300;
 int Hum0   = 591;
-
-//Rounding Amount
 float roundingMoisture = 5;
+String issuedCMD = "None";
 
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
 const char *Plant [] 	= {"Peppermint", "Peppermint", "None", "None", NULL}; // Plant Name
@@ -174,7 +172,7 @@ bool PlantWtr [] 		= { false 	   ,  false 	 ,  false, 	false, NULL}; // Does the
 int TimeWtr  [] 		= { 0 		   ,  0 		 ,  0 	 ,  0    };       // Amount of time plant has been watered for
 int MoistRqd [] 		= { 80 		   ,  80 		 ,  0 	 ,  0 	 };	      // Moisture Required by Plant // 0 Acts as no watering place holder
 
-void SensorInit(bool init = false) {
+void SensorInit(bool init = false) {								// Initializing and displaying sensor values
 	if (init) {display.clearDisplay();};
 	display.setCursor(0, 0);
 	// Sensor loop through test
@@ -207,8 +205,7 @@ void SensorInit(bool init = false) {
 	}
 	if (init) {Serial.print("\n");};
 }
-
-void watering(void) {
+void watering(void) {												// watering script that runs in every base routine to ensure safe watering
 	bool flag = false;
 	for (int i = 0; SensPort[i] != NULL; i ++) {
 		int reading = analogRead(SensPort[i]);
@@ -226,10 +223,31 @@ void watering(void) {
 	}
 	if (flag) {digitalWrite(pump, HIGH);} else {digitalWrite(pump, LOW);}
 }
+void SerialCMD(String issuedCMD = "None") {	// Reads Serial Commands Issued
+	if (issuedCMD != "None") {
+		StopAction();
+	}
+	if (issuedCMD.equals("HELP")) {			// 'HELP' Command Typed
+	Serial.println("List of commands that can be issued are:");
+	Serial.println("RTC-read");
+	Serial.println("RTC-config");
+	Serial.println("RTC-reset");
+	Serial.println("SENSOR-init");
+	Serial.println("SENSOR-high");
+	Serial.println("SENSOR-low");
+	Serial.println("RELAY-test");
+	Serial.println("LCD-test");
+	} else if (issuedCMD.equals("None")) {	// No Command Issued
 
+	} else {
+		Serial.println("\'");
+		Serial.print(issuedCMD);
+		Serial.println("\' - is not a command, Type HELP for list of commands");
+	}
+}
 void setup() {
 	display.begin(SH1106_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-	WatchDog::init(failureRoutine, 3000); // Watchdog startup and defining script (function to run on failure to feed, feed rate required)
+	WatchDog::init(StopAction, 3000); // Watchdog startup and defining script (function to run on failure to feed, feed rate required)
 	Serial.begin(9600);
 	display.clearDisplay();
 	display.drawBitmap(0, 0, Water, 128, 64, WHITE);
@@ -316,6 +334,7 @@ void loop() {
 			display.drawBitmap(5, 20, Bud, 30, 35, WHITE);
 			for (int c = 0; c <= 1000; c = c+10) {
 				watering(); // Calls on Script to manage watering events
+				if(Serial.available()){ SerialCMD(Serial.readStringUntil('\n')); } // Runs Function when serial is connected
 				display.fillRect(43, 20, 85, 40, BLACK);
 				//Plant Number
 				display.setCursor(43,20);
@@ -355,10 +374,11 @@ void loop() {
 		}
 	}
 }
-void failureRoutine(void) { // Function to be called in event of hang or system failure
+void StopAction(void) { // Function to be called in event of hang or system failure
+	WatchDog::stop();
+	if(Serial.available()){ Serial.println("!!! - Stop Watering Issued - !!!"); }
 	digitalWrite(pump,LOW);
 	for (int p = 0; PumpPort[p] != NULL; p++) {
-		if (p != 0 ) {Serial.print(", ");};
 		digitalWrite(PumpPort[p],LOW);
 	}     
 }
