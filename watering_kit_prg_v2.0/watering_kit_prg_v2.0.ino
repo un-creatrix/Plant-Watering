@@ -45,7 +45,7 @@ const byte SensPort [] 	= { A0,  A1,  A2,  A3, NULL}; // A port selection for pl
 int moisture []         = { 0,  0,  0,  0, NULL};
 bool PlantWtr [] 		= { false, false,  false, false, NULL}; // Does the plant need water
 int TimeWtr  [] 		= { 0,  0,  0,  0};       // Amount of time plant has been watered for
-const int MoistRqd [] 	= { 80,  80,  0,  0};	      // Moisture Required by Plant // 0 Acts as no watering place holder
+const int MoistRqd [] 	= { 60,  60,  0,  0};	      // Moisture Required by Plant // 0 Acts as no watering place holder
 
 void SensorInit(bool init = false) {								// Initializing and displaying sensor values
 	if (init) {display.clearDisplay();};

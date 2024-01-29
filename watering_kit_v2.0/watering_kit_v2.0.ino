@@ -82,13 +82,13 @@ int Hum0   = 591;
 float roundingMoisture = 5;
 
 // Declaration of Plants [Pump Port, Sensor Port, Time Watered, Moisture Reqd]
-const char *Plant [] 	= {"Peppermint", "Peppermint", "None", "None", NULL}; // Plant Name // None Removes port from display loop
+const char *Plant [] 	= {"Flower -->", "Flower <--", "None", "None", NULL}; // Plant Name // None Removes port from display loop
 const int PumpPort [] 	= { 6 ,  8,  9,  10, NULL}; // Pump Port Plant is on
 const byte SensPort [] 	= { A0,  A1,  A2,  A3, NULL}; // A port selection for plants
 int moisture []         = { 0,  0,  0,  0, NULL};
 bool PlantWtr [] 		= { false, false,  false, false, NULL}; // Does the plant need water
 int TimeWtr  [] 		= { 0,  0,  0,  0};       // Amount of time plant has been watered for
-const int MoistRqd [] 	= { 80,  80,  0,  0};	      // Moisture Required by Plant // 0 Acts as no watering place holder
+const int MoistRqd [] 	= { 50,  50,  0,  0};	      // Moisture Required by Plant // 0 Acts as no watering place holder
 
 void SensorInit(bool init = false) {								// Initializing and displaying sensor values
 	if (init) {display.clearDisplay();};
@@ -177,7 +177,7 @@ void setup() {
 	display.display();
 	delay(500);
 	//while(!Serial) continue;
-	Serial.println("Welcome to Plant Hub! Software v2.0.2");
+	Serial.println("Welcome to Plant Hub! Software v2.0.3");
 	display.clearDisplay();
 	display.display();
 	display.setTextSize(1);
@@ -185,14 +185,17 @@ void setup() {
 	display.setCursor(0,0);
 	display.setTextSize(2);
 	display.println("Pump Link");
+	pinMode(PumpPort[0], OUTPUT);
+	digitalWrite(PumpPort[0], HIGH);
 	pinMode(pump, OUTPUT);
 	digitalWrite(pump, HIGH);
-	delay(50);
+	delay(5);
 	digitalWrite(pump,LOW);
 	display.setTextSize(3);
 	display.println("Passed");
 	display.display();
 	delay(500); // Delay to Bleed Pressure Down
+	digitalWrite(PumpPort[0], LOW);
 	display.clearDisplay();
 	display.display();
 	display.setTextSize(1);
